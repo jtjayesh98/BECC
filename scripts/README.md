@@ -52,3 +52,7 @@ Additionality is the biomass added or lost during the time period from the start
 # 6: Estimate the Biomass change in Mass of Carbon Dioxide in change
 For the final step, run the following step to calculate the total change in the weight of CO2 and Carbon that occured during the period of modeling and prediction. Run the following command to estimate this change:
 `python ./scripts/step2.py`
+
+# 7: Compare the Results
+The following command line will estimate the biomass estimated in Step 5 with the prediciton results produced from a Regression Model that is trained on the GEDI Dataset for each cluster.
+`python ./scripts/Evaluator.py`
