@@ -104,7 +104,7 @@ class RiskMaps():
         ]
 
         # Drive export path
-        self.drive_folder_path = f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECCPipeline\\GEE_exports_{self.state_name}'
+        self.drive_folder_path = f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_{self.state_name}'
 
         # NRT (Normalized Risk Threshold) placeholder
         self.nrt = None
