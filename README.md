@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Pipeline
 The following pipeline will generate Forest Cover Maps for a given region, that are used to estimate the change in the forest cover and train a model that can predict the change in the near future. During the implemententioant of hte pipeline, the following maps will be produced:
 * Forest Covers
