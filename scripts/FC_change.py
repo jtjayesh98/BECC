@@ -1,40 +1,57 @@
+import sys
+
+if len(sys.argv) > 1:
+    state_name = sys.argv[1]
+    start_year = int(sys.argv[2])
+    mid_pt = int(sys.argv[3])
+    end_year = int(sys.argv[4])
+else:
+    state_name = "Dhenkanal"
+    start_year = 2010
+    mid_pt = 2015
+    end_year = 2020
+
 import rasterio
 import numpy as np
 
-forest_cover1 = "./data/GEE_exports_Dhenkanal/Dhenkanal_2010.tif"
-forest_cover2 = "./data/GEE_exports_Dhenkanal/Dhenkanal_2015.tif"
-forest_cover3 = "./data/GEE_exports_Dhenkanal/Dhenkanal_2020.tif"
 
-for i in range(2):
-    with rasterio.open(forest_cover1) as src:
-        data0 = src.read(1)
-        meta = src.meta.copy() 
-    
-    if i == 0:
-        change_cover = forest_cover2
-    elif i == 1:
-        change_cover = forest_cover3
-    with rasterio.open(change_cover) as src1:
-        data1 = src1.read(1)
+import  os
+
+if os.path.exists(f'./data/GEE_exports_{state_name}'):
+    forest_cover1 = f"./data/GEE_exports_{state_name}/{state_name}_{start_year}.tif"
+    forest_cover2 = f"./data/GEE_exports_{state_name}/{state_name}_{mid_pt}.tif"
+    forest_cover3 = f"./data/GEE_exports_{state_name}/{state_name}_{end_year}.tif"
+
+    for i in range(2):
+        with rasterio.open(forest_cover1) as src:
+            data0 = src.read(1)
+            meta = src.meta.copy() 
+        
+        if i == 0:
+            change_cover = forest_cover2
+        elif i == 1:
+            change_cover = forest_cover3
+        with rasterio.open(change_cover) as src1:
+            data1 = src1.read(1)
 
 
-    change = np.zeros_like(data0, dtype=np.int8)
-    change[(data0 == 1) & (data1 == 0)] = -1
-    change[(data0 == 0) & (data1 == 1)] = 1
-    change[(data0 == 1) & (data1 == 1)] = 0
-    change[(data0 == 0) & (data1 == 0)] = 0
+        change = np.zeros_like(data0, dtype=np.int8)
+        change[(data0 == 1) & (data1 == 0)] = -1
+        change[(data0 == 0) & (data1 == 1)] = 1
+        change[(data0 == 1) & (data1 == 1)] = 0
+        change[(data0 == 0) & (data1 == 0)] = 0
 
-    meta.update(dtype=rasterio.int8)
-    deforestation_mask = np.zeros_like(change, dtype=np.int8)
-    deforestation_mask[change == 1] = -1
-    afforestation_mask = np.zeros_like(change, dtype=np.int8)
-    afforestation_mask[change == 1] = 1
-    print(change.shape)
-    if i == 0:
-        with rasterio.open("./data/GEE_exports_Dhenkanal/afforestation_2010_2015.tif", "w", **meta) as dst:
-            dst.write(afforestation_mask, 1)
-    elif i == 1:
-        with rasterio.open("./data/GEE_exports_Dhenkanal/afforestation_2010_2020.tif", "w", **meta) as dst:
-            dst.write(afforestation_mask, 1)
-
-    
+        meta.update(dtype=rasterio.int8)
+        deforestation_mask = np.zeros_like(change, dtype=np.int8)
+        deforestation_mask[change == 1] = -1
+        afforestation_mask = np.zeros_like(change, dtype=np.int8)
+        afforestation_mask[change == 1] = 1
+        print(change.shape)
+        if i == 0:
+            with rasterio.open(f"./data/GEE_exports_{state_name}/afforestation_{start_year}_{mid_pt}.tif", "w", **meta) as dst:
+                dst.write(afforestation_mask, 1)
+        elif i == 1:
+            with rasterio.open(f"./data/GEE_exports_{state_name}/afforestation_{start_year}_{end_year}.tif", "w", **meta) as dst:
+                dst.write(afforestation_mask, 1)
+else:
+    print("Please run Step 1 first and download the appropriate from the drive to the correct location")

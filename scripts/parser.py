@@ -1,10 +1,14 @@
 import pandas as pd
 import math
 import sys 
-if len(sys.argv) > 0:
+if len(sys.argv) > 1:
     sample_area = sys.argv[1]
+    district_name = sys.argv[2]
+    state_name = sys.argv[3]
 else:
     sample_area = "Pangatira"
+    district_name = "Dhenkanal"
+    state_name = "Odisha"
 
 
 
@@ -301,8 +305,10 @@ def eval2(file, final_stack, j):
 # print("Biomass calculation completed and saved to ADHAPALI_biomass.csv")
 
 
+
+
 def biomass_calculation(area):
-    file = pd.read_csv("./GEE_exports_Dhenkanal/" + area.upper() + "_allometric.csv")
+    file = pd.read_csv(f"./data/GEE_exports_{district_name}/" + area.upper() + "_allometric.csv")
     equations = file["Equation"]
     biomass = []
     for i in range(len(file)):
@@ -317,8 +323,12 @@ def biomass_calculation(area):
         except KeyError:
             print("Invalid input. Please enter a valid number.")
     file["Total biomass"] = biomass
-    file.to_csv("./GEE_exports_Dhenkanal/" + area.upper() + "_biomass.csv", index=False)
+    file.to_csv(f"./data/GEE_exports_{district_name}/" + area.upper() + "_biomass.csv", index=False)
     print("Biomass calculation completed and saved to " + area + "_biomass.csv")
 
+import os
 
-biomass_calculation("Pangatira")
+if os.path.exists(f'./data/GEE_exports_{district_name}/{sample_area.upper()}_allometric.csv'):
+    biomass_calculation(sample_area)
+else:
+    print("Please Upload the Allometric file to the Data Folder")

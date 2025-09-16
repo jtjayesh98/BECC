@@ -2,51 +2,23 @@ import ee
 ee.Authenticate()
 ee.Initialize(project="cogent-range-308518")
 import pandas as pd
-state_name = 'Odisha'
-district_name = 'Dhenkanal'
-site_name = 'Pangatira'
+
+import os
+import sys
 
 
-state_sites = pd.read_csv(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_Dhenkanal\\{state_name}_sites.csv')
 
-
-site = state_sites[state_sites['Name'] == site_name]
-num_site = len(site)
-
-# if (num_site == 0):
-#     print("No feature found with Name = '" + site_name + "'. Check the Name value or asset.")
-# elif (num_site > 1):
-#     print("Warning: {num_site} features found with Name = '" + site_name + "'. Using the first one.")
-# print("Number of " + site_name + " features: " + str(num_site))
-
-import json
-
-if num_site > 0:
-    site_feature = site.iloc[0]
-    geojson_dict = json.loads(site_feature['.geo'])
-    site_geometry = ee.Geometry(geojson_dict)
-    geojson = site_geometry.getInfo()
+if len(sys.argv) > 1:
+    state_name = sys.argv[1]
+    district_name = sys.argv[2]
+    site_name = sys.argv[3]
 else:
-    print("No site found.")
+    state_name = 'Odisha'
+    district_name = 'Dhenkanal'
+    site_name = 'Pangatira'
 
 
-geometry = ee.Geometry.Polygon([geojson['coordinates']])
-
-
-
-
-
-feature = ee.Feature(geometry)
-
-# Paint into an image (value = 1 inside polygon)
-polygon_img = ee.Image().paint(
-    featureCollection=ee.FeatureCollection([feature]),
-    color=1
-)
-
-
-
-
+run = False
 
 def maskClouds(img):
     qa = img.select('QA60')
@@ -54,11 +26,12 @@ def maskClouds(img):
     cirrusBitMask = 1 << 11
 
     mask = (qa.bitwiseAnd(cloudBitMask).eq(0)).And(
-           qa.bitwiseAnd(cirrusBitMask).eq(0))
+        qa.bitwiseAnd(cirrusBitMask).eq(0))
 
     return img.updateMask(mask).divide(10000)
 
-
+def kmeans_wrapper(img):
+    return applyKMeans(img, img.geometry(), 7)
 
 def calculateNDVI(image):
     nir = image.select('B8')
@@ -97,43 +70,85 @@ def applyKMeans(image, geometry, num_clusters=7):
     result = training_image.cluster(clusterer).rename('KMeans_clusters')
     return image.addBands(result)
 
-# ...existing code...
 
-# Define your image collection
-collection = (
-    ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-    .filterDate('2020-01-01', '2021-01-30')
-    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-    .filterBounds(geometry)
-    .map(maskClouds)
-    .map(calculateNDVI)
-    .map(applySNIC_with_meanNDVI)
-)
+if os.path.exists(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_{district_name}\\{state_name}_sites.csv'):
+    state_sites = pd.read_csv(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_{district_name}\\{state_name}_sites.csv')
+    run = True
+else:
+    print("Please Upload the Sites file to the Data Folder")
+
+if run:
+    site = state_sites[state_sites['Name'] == site_name]
+    num_site = len(site)
+
+    # if (num_site == 0):
+    #     print("No feature found with Name = '" + site_name + "'. Check the Name value or asset.")
+    # elif (num_site > 1):
+    #     print("Warning: {num_site} features found with Name = '" + site_name + "'. Using the first one.")
+    # print("Number of " + site_name + " features: " + str(num_site))
+
+    import json
+
+    if num_site > 0:
+        site_feature = site.iloc[0]
+        geojson_dict = json.loads(site_feature['.geo'])
+        site_geometry = ee.Geometry(geojson_dict)
+        geojson = site_geometry.getInfo()
+    else:
+        print("No site found.")
+
+
+    geometry = ee.Geometry.Polygon([geojson['coordinates']])
 
 
 
-# Apply KMeans to each image in the collection
-def kmeans_wrapper(img):
-    return applyKMeans(img, img.geometry(), 7)
-
-collection_with_kmeans = collection.map(kmeans_wrapper)
-
-# Get the first image from the collection with KMeans clusters
-first_img = collection_with_kmeans.first().clip(geometry)
 
 
+    feature = ee.Feature(geometry)
 
-first_img = first_img.toFloat()
+    # Paint into an image (value = 1 inside polygon)
+    polygon_img = ee.Image().paint(
+        featureCollection=ee.FeatureCollection([feature]),
+        color=1
+    )
 
 
-task = ee.batch.Export.image.toDrive(
-    image=first_img.select('KMeans_clusters').clip(geometry),
-    description=f'{site_name}_KMeans_clusters',
-    folder='GEE_exports_' + district_name,  # Change this to your desired Drive folder name
-    fileNamePrefix=f'{site_name}_KMeans_clusters',
-    region=geometry,
-    scale=30,
-    maxPixels=1e13
-)
-task.start()
-print("Export to Google Drive started. Check the Earth Engine Tasks tab for progress.")
+    # ...existing code...
+
+    # Define your image collection
+    collection = (
+        ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+        .filterDate('2020-01-01', '2021-01-30')
+        .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+        .filterBounds(geometry)
+        .map(maskClouds)
+        .map(calculateNDVI)
+        .map(applySNIC_with_meanNDVI)
+    )
+
+
+
+    # Apply KMeans to each image in the collection
+
+
+    collection_with_kmeans = collection.map(kmeans_wrapper)
+
+    # Get the first image from the collection with KMeans clusters
+    first_img = collection_with_kmeans.first().clip(geometry)
+
+
+
+    first_img = first_img.toFloat()
+
+
+    task = ee.batch.Export.image.toDrive(
+        image=first_img.select('KMeans_clusters').clip(geometry),
+        description=f'{site_name}_KMeans_clusters',
+        folder='GEE_exports_' + district_name,  # Change this to your desired Drive folder name
+        fileNamePrefix=f'{site_name}_KMeans_clusters',
+        region=geometry,
+        scale=30,
+        maxPixels=1e13
+    )
+    task.start()
+    print("Export to Google Drive started. Check the Earth Engine Tasks tab for progress.")

@@ -56,5 +56,9 @@ engine = RiskMaps(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports
 if sys.argv[1] == "1":
     engine.perform_gee_operations()
 else:
-    engine.run_wo_gee()
+    if os.path.exists(f'./data/GEE_exports_{state_name}'):
+        engine.run_wo_gee()
+        print("Please create the back-up by uploalding the data to the Drive")
+    else:
+        print("Run Step 1 first and download the appropriate from the drive to the correct location")
 

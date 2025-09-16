@@ -12,6 +12,18 @@ ee.Initialize(project="cogent-range-308518")
 import rasterio
 import pandas as pd
 
+import sys
+import os
+
+if len(sys.argv) > 1:
+    site_name = sys.argv[1]
+    district_name = sys.argv[2]
+    state_name = sys.argv[3]
+else:
+    site_name = 'Pangatira'
+    district_name = 'Dhenkanal'
+    state_name = 'Odisha'
+
 
 from FinalStage_utils import applySNIC_with_meanNDVI, applyKMeans, maskS2clouds, calculateNDVI
 
@@ -45,10 +57,10 @@ from rasterio.warp import transform
 import pandas as pd
 
 def individual_cluster_biomass(site_name):
-    site_name2 = "Pangatira"
+    site_name2 = site_name
     # File paths (update these to your actual file locations)
-    geotiff_path = './data/GEE_exports_Dhenkanal/' +site_name2 + '_KMeans_Cluster.tif'  # Replace with your GeoTIFF file path
-    csv_path = './data/GEE_exports_Dhenkanal/' + site_name.upper() + '_biomass.csv'          # Your CSV file
+    geotiff_path = f'./data/GEE_exports_{district_name}/' +site_name2 + '_KMeans_clusters.tif'  # Replace with your GeoTIFF file path
+    csv_path = f'./data/GEE_exports_{district_name}/' + site_name.upper() + '_biomass.csv'          # Your CSV file
 
     # Load GeoTIFF
     dataset = rasterio.open(geotiff_path)
@@ -92,10 +104,10 @@ def individual_cluster_biomass(site_name):
     for cluster, group in df.groupby('Cluster'):
         if cluster is not None:
             # Save each cluster group to a CSV file
-            group.to_csv(f'./data/GEE_exports_Dhenkanal/cluster_{int(cluster)}.csv', index=False)
+            group.to_csv(f'./data/GEE_exports_{district_name}/cluster_{int(cluster)}.csv', index=False)
         else:
             # Optionally save points outside the GeoTIFF to a separate file
-            group.to_csv('./data/GEE_exports_Dhenkanal/cluster_outside.csv', index=False)
+            group.to_csv(f'./data/GEE_exports_{district_name}/cluster_outside.csv', index=False)
 
     # Close the GeoTIFF dataset
     dataset.close()
@@ -130,7 +142,7 @@ def calculate_biomass_plot(df):
     # return biomass
     return individual_biomass.sum()
 def biomass_summary():
-    cluster_files = glob.glob('./data/GEE_exports_Dhenkanal/cluster_*.csv')
+    cluster_files = glob.glob(f'./data/GEE_exports_{district_name}/cluster_*.csv')
 
     # Initialize list to store results
     results = []
@@ -166,7 +178,7 @@ def biomass_summary():
     results_df = results_df.sort_values('Cluster_ID')
 
     # Save to CSV
-    results_df.to_csv('./data/GEE_exports_Dhenkanal/cluster_biomass_summary.csv', index=False)
+    results_df.to_csv(f'./data/GEE_exports_{district_name}/cluster_biomass_summary.csv', index=False)
 
 
 import pandas as pd
@@ -176,12 +188,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import pairwise_distances
 import os
 
-site_name2 = 'Pangatira'
-image, geometry = create_image_collection('Dhenkanal')
+site_name2 = site_name
+image, geometry = create_image_collection(district_name=district_name)
 
-biomass_csv_path = './data/GEE_exports_Dhenkanal/cluster_biomass_summary.csv'
-output_csv_path = './data/GEE_exports_Dhenkanal/imputed_biomass_clusters.csv'
-cluster_tif = './data/GEE_exports_Dhenkanal/' + site_name2 +'_KMeans_Cluster.tif'
+biomass_csv_path = f'./data/GEE_exports_{district_name}/cluster_biomass_summary.csv'
+output_csv_path = f'./data/GEE_exports_{district_name}/imputed_biomass_clusters.csv'
+cluster_tif = f'./data/GEE_exports_{district_name}/' + site_name2 +'_KMeans_clusters.tif'
 
 
 s2_collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
@@ -225,7 +237,7 @@ unique_values = clusters.reduceRegion(
     scale=10,
     maxPixels=1e9
 ).get(cluster_band).getInfo()
-print(f"Unique cluster values in Pangatira: {list(unique_values.keys())}")
+print(f"Unique cluster values in {site_name}: {list(unique_values.keys())}")
 
 # Function to extract mean EVI and slope per cluster
 def extract_features_per_cluster(cluster_id):
@@ -282,6 +294,8 @@ for cid in cluster_ids:
 # Create DataFrame with features
 feature_df = pd.DataFrame(features, columns=['EVI', 'SLOPE'], index=cluster_ids)
 # Load known biomass data
+individual_cluster_biomass(site_name=site_name)
+biomass_summary()
 try:
     biomass_df = pd.read_csv(biomass_csv_path)
     biomass_df.set_index('Cluster_ID', inplace=True)
@@ -332,9 +346,9 @@ imputed_df = pd.DataFrame({
 imputed_df.to_csv(output_csv_path, index=False)
 print(f"Imputed biomass saved to {output_csv_path}")
 
-site_name = 'Pangatira'
+site_name = site_name
 
-file = "./data/GEE_exports_Dhenkanal/" + site_name + "_additionality_per_cluster.csv"
+file = f"./data/GEE_exports_{district_name}/" + site_name + "_additionality_per_cluster.csv"
 
 df = pd.read_csv(file)
 additionality_biomass = 0

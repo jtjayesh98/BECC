@@ -7,14 +7,32 @@ import numpy as np
 import pandas as pd
 # Paths
 
-sampling_plot = 'Pangatira'
-pred_path = './data/GEE_exports_Dhenkanal/Acre_Adjucted_Density_Map_VP.tif'
-mask_path = './data/GEE_exports_Dhenkanal/' + sampling_plot + '_KMeans_Cluster.tif'
-outpath = './data/GEE_exports_Dhenkanal/export_masked.tif'
-def1_path = "./data/GEE_exports_Dhenkanal/deforestation_map_2010_2015.tif"
-def2_path = "./data/GEE_exports_Dhenkanal/deforestation_map_2010_2020.tif"
-aff1_path = "./data/GEE_exports_Dhenkanal/afforestation_2010_2015.tif"
-aff2_path = "./data/GEE_exports_Dhenkanal/afforestation_2010_2020.tif"
+import sys
+import os
+
+if len(sys.argv) > 1:
+    state_name = sys.argv[1]
+    district_name = sys.argv[2]
+    site_name = sys.argv[3]
+    start_year = int(sys.argv[4])
+    mid_pt = int(sys.argv[5])
+    end_year = int(sys.argv[6])
+else:
+    state_name = 'Odisha'
+    district_name = 'Dhenkanal'
+    site_name = 'Pangatira'
+    start_year = 2010
+    mid_pt = 2015
+    end_year = 2020
+
+sampling_plot = site_name
+pred_path = f'./data/GEE_exports_{district_name}/Acre_Adjucted_Density_Map_VP.tif'
+mask_path = f'./data/GEE_exports_{district_name}/' + sampling_plot + '_KMeans_clusters.tif'
+outpath = f'./data/GEE_exports_{district_name}/export_masked.tif'
+def1_path = f"./data/GEE_exports_{district_name}/deforestation_map_{start_year}_{mid_pt}.tif"
+def2_path = f"./data/GEE_exports_{district_name}/deforestation_map_{start_year}_{end_year}.tif"
+aff1_path = f"./data/GEE_exports_{district_name}/afforestation_{start_year}_{mid_pt}.tif"
+aff2_path = f"./data/GEE_exports_{district_name}/afforestation_{start_year}_{end_year}.tif"
 
 
 
@@ -78,13 +96,13 @@ for j in range(7):
             dst.write(masked_data)
         if i == 0:
             result.append(sum(sum(masked_data[0]))*0.404686)
-            # print(sum(sum(masked_data[0]))*0.404686)
+
         else:
             result.append(sum(sum(masked_data[0]))*0.09)
-            # print(sum(sum(masked_data[0]))*0.09) 
-        print(result)
+
+
     final_result.loc[len(final_result)] = result
-final_result.to_csv(f'./data/GEE_exports_Dhenkanal/' + sampling_plot + '_forest_cover_change.csv', index=False)
+final_result.to_csv(f'./data/GEE_exports_{district_name}/' + sampling_plot + '_forest_cover_change.csv', index=False)
 
 
 additionality_table = pd.DataFrame(columns=['cluster', 'projected_deforestation', 'actual_deforestation', 'afforestation'])
@@ -103,6 +121,6 @@ additionality_table.loc[len(additionality_table)] = ['Total', additionality_tabl
 additionality_table = additionality_table.round(2)
 # additionality_table.rename(columns={'projected_deforestation': 'Projected Deforestation (ha)', 'actual_deforestation': 'Actual Deforestation (ha)', 'afforestation': 'Afforestation (ha)', 'additionality_area': 'Additionality Area (ha)'}, inplace=True)
 
-additionality_table.to_csv(f'./data/GEE_exports_Dhenkanal/' + sampling_plot + '_additionality_per_cluster.csv', index=False)
+additionality_table.to_csv(f'./data/GEE_exports_{district_name}/' + sampling_plot + '_additionality_per_cluster.csv', index=False)
 
 print(additionality_table)
