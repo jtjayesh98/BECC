@@ -11,7 +11,7 @@ There are 1 steps involved in the process, and at the end of each step, a physic
 
 Create a Python Environment and install all the dependencies with the help of `requirements.txt` available in the repository
 
-If in case osgeo/GDAL library's wheel is not installing, please install the pre-built wheel and install the package directly. You can find the prebuilt library for Windows (AMD 64bit) systems with Python 3.13 <a = https://drive.google.com/drive/folders/11syOJuhaX7qSCeN-mvk003r3JkrfuFyP?usp=drive_link>here</a>.
+If in case osgeo/GDAL library's wheel is not installing, please install the pre-built wheel and install the package directly. You can find the prebuilt library for Windows (AMD 64bit) systems with Python 3.13 <a = https://drive.google.com/drive/folders/11syOJuhaX7qSCeN-mvk003r3JkrfuFyP?usp=drive_link> here </a>.
 
 
 # Step 1: Implementing GEE Operations
