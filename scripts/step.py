@@ -2,6 +2,15 @@
 import sys
 
 
+'''
+Establishing Global Parameters
+------------------------------
+state_name: Name of the state
+start_year: Start year of the project
+mid_pt: End point of monitoring period
+end_year: End year of the project (Projection period)
+'''
+
 if len(sys.argv) > 2:
     state_name = sys.argv[2]
     start_year = int(sys.argv[3])
@@ -49,13 +58,15 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 from FinalClass import RiskMaps
 
+
+# Initialize the RiskMaps engine
 engine = RiskMaps(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_{state_name}', start_year, mid_pt, end_year, state_name)
 
-# gdal.Open("./GEE_exports_Dhenkanal\Vulnerability_Map_CAL.tif")
-
 if sys.argv[1] == "1":
+    # Run the GEE operations
     engine.perform_gee_operations()
 else:
+    # Run the operations without GEE
     if os.path.exists(f'./data/GEE_exports_{state_name}'):
         engine.run_wo_gee()
         print("Please create the back-up by uploalding the data to the Drive")

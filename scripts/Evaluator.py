@@ -5,6 +5,13 @@ import geemap
 ee.Initialize()
 import sys
 
+'''
+Establishing Global Parameters
+------------------------------
+region: Name of the district
+sample_site: Name of the site
+'''
+
 if len(sys.argv) > 1:
     region = sys.argv[1]
     sample_site = sys.argv[2]
@@ -12,26 +19,26 @@ else:
     region = "Dhenkanal"
     sample_site = "Pangatira"
 
+'''
+File Locations/Paths
+--------------------    
+classified2: Path to the KMeans clustered raster for the sampling plot
+'''
+
 classified2 = ee.Image(f"projects/cogent-range-308518/assets/{sample_site}_KMeans_Cluster")
 
 
 
 # Load GAUL dataset
 gaul = ee.FeatureCollection("FAO/GAUL/2015/level2")
-
+# Get the geometry of the specified district
 district = (gaul
             .filter(ee.Filter.eq('ADM0_NAME', 'India'))
             .filter(ee.Filter.eq('ADM2_NAME', region)))
-
+# Geomatry of the district
 geometry = district.geometry()
 
 site = sample_site
-
-params = {
-    'min': 0,
-    'max': 6,
-    'palette': ['red', 'green', 'blue', 'yellow', 'orange', 'cyan', 'purple']
-}
 
 # ---------- Function to get class boundary ----------
 def getClassBoundary(classValue):
@@ -62,7 +69,7 @@ def slopeMask(image, geometry=geometry):
     slope = ee.Terrain.slope(elevation)
     return image.updateMask(slope.lt(30))
 
-
+# RMSE calculation function
 def calculateRmse(input_fc):
     observed = ee.Array(input_fc.aggregate_array("MU"))
     predicted_vals = ee.Array(input_fc.aggregate_array("agbd_predicted"))
@@ -71,11 +78,10 @@ def calculateRmse(input_fc):
 
 total_agb = []
 cluster_name = []
-for i in range(7):
 
+for i in range(7): # 7 clusters: 0, 1, 2, 3, 4, 5, 6
     cluster = i
     boundary = getClassBoundary(cluster)
-
     # ---------- Satellite Embeddings ----------
     startDate = ee.Date.fromYMD(2022, 1, 1)
     endDate = startDate.advance(1, "year")
@@ -92,9 +98,6 @@ for i in range(7):
 
     # ---------- GEDI Dataset ----------
     dataset = ee.Image("LARSE/GEDI/GEDI04_B_002")
-
-
-
     datasetProjection = dataset.select("MU").projection()
     datasetProcessed = slopeMask(errorMask(dataset))
     datasetMosaic = datasetProcessed.select("MU").setDefaultProjection(datasetProjection)
@@ -165,17 +168,14 @@ for i in range(7):
     predictedSamples = training.classify(model, outputName="agbd_predicted")
 
     # RMSE calculation
-
-
     rmse = calculateRmse(predictedSamples)
     print("RMSE:", rmse.getInfo())
 
     # Predict across region
     predictedImage = stackedResampled.classify(model, outputName="MU")
-
     predictedExportImage = "predicted_agbd_" + region
     predictedExportImagePath = exportFolder + predictedExportImage
-
+    # Export predictedImage to Asset
     task2 = ee.batch.Export.image.toAsset(
         image=predictedImage.clip(geometry),
         description="Predicted_Image_Export",

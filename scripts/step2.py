@@ -1,9 +1,17 @@
-state_name = 'Dhenkanal'
-start_year = 2010
-mid_pt = 2015
-end_year = 2020
+import pandas as pd
+import numpy as np
+from sklearn.impute import KNNImputer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import pairwise_distances
+import os
+import rasterio
+from rasterio.warp import transform
+import pandas as pd
+import glob
+import os
+import math
 
-years = list(range(start_year, end_year + 1))
+from FinalStage_utils import applySNIC_with_meanNDVI, applyKMeans, maskS2clouds, calculateNDVI
 
 import ee
 ee.Authenticate()
@@ -15,6 +23,16 @@ import pandas as pd
 import sys
 import os
 
+
+
+'''
+Establishing Global Parameters
+------------------------------
+site_name: Name of the site
+district_name: Name of the district
+state_name: Name of the state
+'''
+
 if len(sys.argv) > 1:
     site_name = sys.argv[1]
     district_name = sys.argv[2]
@@ -25,9 +43,15 @@ else:
     state_name = 'Odisha'
 
 
-from FinalStage_utils import applySNIC_with_meanNDVI, applyKMeans, maskS2clouds, calculateNDVI
 
 def create_image_collection(district_name):
+    '''
+    Function to create an image collection for the specified district.
+    Args:
+        district_name: Name of the district
+    Returns:
+        Tuple containing the image and its geometry.
+    '''
     site_name = 'Pangatira'
 
     # Define the region of interest: Dhenkanal district of Odisha
@@ -47,16 +71,12 @@ def create_image_collection(district_name):
 
     return (image, geometry)
 
-
-
-
-
-
-import rasterio
-from rasterio.warp import transform
-import pandas as pd
-
 def individual_cluster_biomass(site_name):
+    '''
+    Function to assign cluster values to individual plot data and save cluster-wise CSV files.
+    Args:
+        site_name: Name of the site
+    '''
     site_name2 = site_name
     # File paths (update these to your actual file locations)
     geotiff_path = f'./data/GEE_exports_{district_name}/' +site_name2 + '_KMeans_clusters.tif'  # Replace with your GeoTIFF file path
@@ -114,13 +134,17 @@ def individual_cluster_biomass(site_name):
 
 
 
-import pandas as pd
-import glob
-import os
-import math
+
 # Find all cluster CSV files
 
 def calculate_area(df):
+    '''
+    Function to calculate total area based on plot data.
+    Args:
+        df: DataFrame containing plot data
+    Returns:
+        Total area calculated from the plots
+    '''
     plots = df["Plot No"].unique()
     area = 0
     print(plots)
@@ -130,25 +154,23 @@ def calculate_area(df):
     return area
 
 def calculate_biomass_plot(df):
+    '''
+    Function to calculate total biomass based on plot data.
+    Args:
+        df: DataFrame containing plot data
+    Returns:
+        Total biomass calculated from the plots
+    '''
     individual_biomass = df['Total biomass']
-    # dbh = df["DBH"]
-    # biomass = 0
-    # for i in range(len(dbh)):
-    #     if dbh[i] > 5 and dbh[i] < 148:
-    #         biomass = biomass + 42.69 - 12.8*dbh[i] + 1.242*dbh[i]*dbh[i]
-    #     else:
-    #         biomass = biomass + math.exp(2.53*math.log(dbh[i])-2.134)
-    #     # print(math.exp(2.53*math.log(dbh[i])-2.134))
-    # return biomass
     return individual_biomass.sum()
-def biomass_summary():
-    cluster_files = glob.glob(f'./data/GEE_exports_{district_name}/cluster_*.csv')
 
+def biomass_summary():
+    '''
+    Function to summarize biomass for each cluster and save the results to a CSV file.
+    '''
+    cluster_files = glob.glob(f'./data/GEE_exports_{district_name}/cluster_*.csv')
     # Initialize list to store results
     results = []
-
-
-
     # Process each cluster file
     for file in cluster_files:
         # Extract cluster ID from filename (e.g., 'cluster_0.csv' -> 0)
@@ -181,12 +203,7 @@ def biomass_summary():
     results_df.to_csv(f'./data/GEE_exports_{district_name}/cluster_biomass_summary.csv', index=False)
 
 
-import pandas as pd
-import numpy as np
-from sklearn.impute import KNNImputer
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import pairwise_distances
-import os
+
 
 site_name2 = site_name
 image, geometry = create_image_collection(district_name=district_name)
@@ -195,7 +212,7 @@ biomass_csv_path = f'./data/GEE_exports_{district_name}/cluster_biomass_summary.
 output_csv_path = f'./data/GEE_exports_{district_name}/imputed_biomass_clusters.csv'
 cluster_tif = f'./data/GEE_exports_{district_name}/' + site_name2 +'_KMeans_clusters.tif'
 
-
+# Load Sentinel-2 image collection for the year 2020
 s2_collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
     .filterBounds(geometry) \
     .filterDate('2020-01-01', '2020-12-31') \

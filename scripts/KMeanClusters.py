@@ -5,8 +5,16 @@ import pandas as pd
 
 import os
 import sys
+import json
 
 
+'''
+Establishing Global Parameters
+------------------------------
+state_name: Name of the state
+district_name: Name of the district
+site_name: Name of the site
+'''
 
 if len(sys.argv) > 1:
     state_name = sys.argv[1]
@@ -21,6 +29,11 @@ else:
 run = False
 
 def maskClouds(img):
+    '''
+    Function to mask clouds in a Sentinel-2 image
+    Args:
+        img: ee.Image, Sentinel-2 image
+    '''
     qa = img.select('QA60')
     cloudBitMask = 1 << 10
     cirrusBitMask = 1 << 11
@@ -31,9 +44,21 @@ def maskClouds(img):
     return img.updateMask(mask).divide(10000)
 
 def kmeans_wrapper(img):
+    '''
+    Wrapper function to apply KMeans clustering to an image
+    Args:
+        img: ee.Image, input image
+    '''
     return applyKMeans(img, img.geometry(), 7)
 
 def calculateNDVI(image):
+    '''
+    Function to calculate NDVI for a Sentinel-2 image
+    Args:
+        image: ee.Image, Sentinel-2 image
+    Returns:
+        ee.Image, image with NDVI band added
+    '''
     nir = image.select('B8')
     red = image.select('B4')
     ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
@@ -41,6 +66,13 @@ def calculateNDVI(image):
 
 
 def applySNIC_with_meanNDVI(image):
+    '''
+    Apply SNIC segmentation and compute mean NDVI per segment.
+    Args:
+        image: ee.Image with NDVI band
+    Returns:
+        ee.Image with SNIC mean NDVI band
+    '''
     ndvi = image.select('NDVI')
     snic = ee.Algorithms.Image.Segmentation.SNIC(
         image=ndvi,
@@ -58,6 +90,15 @@ def applySNIC_with_meanNDVI(image):
     return image.addBands(meanNDVI)
 
 def applyKMeans(image, geometry, num_clusters=7):
+    '''
+    Function to apply KMeans clustering to an image based on mean NDVI of SNIC segments.
+    Args:
+        image: ee.Image with mean NDVI band
+        geometry: ee.Geometry, region of interest
+        num_clusters: int, number of clusters for KMeans
+    Returns:
+        ee.Image with KMeans cluster band
+    '''
     training_image = image.select(['mean_NDVI_SNIC'])
     training_data = training_image.sample(
         region=geometry,
@@ -71,6 +112,7 @@ def applyKMeans(image, geometry, num_clusters=7):
     return image.addBands(result)
 
 
+# Load the sites file for the specified state
 if os.path.exists(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_{district_name}\\{state_name}_sites.csv'):
     state_sites = pd.read_csv(f'C:\\Users\\Jayesh Tripathi\\Desktop\\BECC\\data\\GEE_exports_{district_name}\\{state_name}_sites.csv')
     run = True
@@ -80,14 +122,6 @@ else:
 if run:
     site = state_sites[state_sites['Name'] == site_name]
     num_site = len(site)
-
-    # if (num_site == 0):
-    #     print("No feature found with Name = '" + site_name + "'. Check the Name value or asset.")
-    # elif (num_site > 1):
-    #     print("Warning: {num_site} features found with Name = '" + site_name + "'. Using the first one.")
-    # print("Number of " + site_name + " features: " + str(num_site))
-
-    import json
 
     if num_site > 0:
         site_feature = site.iloc[0]

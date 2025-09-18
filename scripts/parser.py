@@ -1,6 +1,17 @@
 import pandas as pd
 import math
 import sys 
+import math
+
+import os
+'''
+Establishing Global Parameters
+------------------------------
+sample_area: Name of the sampling area
+district_name: Name of the district
+state_name: Name of the state
+'''
+
 if len(sys.argv) > 1:
     sample_area = sys.argv[1]
     district_name = sys.argv[2]
@@ -12,7 +23,16 @@ else:
 
 
 
+
+
 def process(process_stack):
+    '''
+    Function to process the current stack and return the value and its type.
+    Args:
+        process_stack: List of strings representing the current stack.
+    Returns:
+        Tuple containing the processed value and its type ("NUM" or "OPER").
+    '''
     if process_stack[0] == "NUM":
         number = ""
         for i in process_stack[1:]:
@@ -24,18 +44,17 @@ def process(process_stack):
             number += i
     return (number, process_stack[0])
 
-
-
-
-
-
-
 def produce_stack(equations):
+    '''
+    Function to convert an equation string into a stack of tokens.
+    Args:
+        equations: String representing the equation.
+    Returns:
+        List of tokens representing the equation.
+    '''
     process_stack = []
-    num_stack = []
     variable_stack = []
     operation_stack = []
-    garbage_stack = []
     final_stack = []
     ite = 0
     alpha = False
@@ -88,117 +107,20 @@ def produce_stack(equations):
                     process_stack.append("OPER")
                     alpha = True
                 process_stack.append(eq)
-        # elif eq in ["(", ")"]:
-        #     continue
-
         ite += 1
-
     return final_stack
 
-import math
 
-def single_calculation(sing_cal):
-    print(sing_cal)
-    if sing_cal[1] == "*":
-        return sing_cal[0]*sing_cal[2]
-    elif sing_cal[1] == "/":
-        return sing_cal[0]/sing_cal[2]
-    elif sing_cal[1] == "^":
-        return math.pow(sing_cal[0], sing_cal[2])
-    elif sing_cal[0] == "log" or sing_cal[0] == "log":
-        return math.log(sing_cal[1], 10)
-    elif sing_cal[0] == "exp":
-        return math.exp(sing_cal[1])
-    elif sing_cal[0] == "sqrt":
-        return math.sqrt(sing_cal[1])
-    elif sing_cal[1] == "+":
-        return sing_cal[0]+sing_cal[2]
-    elif sing_cal[1] == "-":
-        return sing_cal[0]-sing_cal[2]
-
-def calculate(prod_stack):
-    val = 0
-    if len(prod_stack) == 1:
-        return prod_stack[0]
-    while len(prod_stack) > 1:
-        sing_cal = []
-        ite = 0
-        new_flag = False
-        curr_stack = []
-        flag = False
-        if len(prod_stack) == 3:
-            curr_stack = [single_calculation(prod_stack)]
-        else:
-            for i in prod_stack:
-                if ("*" in prod_stack) or ("log" in prod_stack) or ("sqrt" in prod_stack) or ("ln" in prod_stack) or ("/" in prod_stack) or ("^" in prod_stack) or ("exp" in prod_stack):
-                    if flag == True:
-                        sing_cal.append(i)
-                        flag = False
-                        curr_stack.append(single_calculation(sing_cal))
-                        sing_cal = []
-                    elif i in ["log", "ln", "sqrt", "exp"]:
-                        sing_cal.append(i)
-                        flag = True                    
-                    elif i in ["*", "^", "/"]:
-                        var1 = curr_stack.pop(-1)
-                        sing_cal.append(var1)
-                        sing_cal.append(i)
-                        flag = True
-
-                    else:
-                        curr_stack.append(i)
-
-                else:
-                    if len(sing_cal) == 3:
-                        curr_stack.append(single_calculation(sing_cal))
-                        sing_cal = []
-                        new_flag = True
-                        curr_stack.append(i)
-                    else:
-                        if new_flag == False:
-                            sing_cal.append(i)
-                        else:
-                            curr_stack.append(i)
-        prod_stack = curr_stack
-    return prod_stack[0]
             
-
-
-def collapse(stack):
-    new_stack = []
-    while "(" in stack or ")" in stack:
-        new_stack = []
-        prod_stack = []
-        flag = False
-        for st in stack:
-            if flag == False:
-                if st == "(":
-                    flag = True
-                else:
-                    new_stack.append(st)
-            else:
-                if st == "(":                    
-                    new_stack.append("(")
-                    new_stack = new_stack + prod_stack
-                    prod_stack = []
-                elif st == ")":
-                    flag = False
-                    new_stack.append(calculate(prod_stack))
-                else:
-                    prod_stack.append(st)
-        
-        stack = new_stack
-    return stack
-
-
-def ret_funct(prod_stack):
-    if prod_stack[0] == "log":
-        return ""
-
 def collapse2(stack):
+    '''
+    Function to collapse the stack by replacing certain tokens with their corresponding Python functions.
+    Args:
+        stack: List of tokens representing the equation.
+    Returns:
+        List of tokens with certain tokens replaced by Python functions.
+    '''
     new_stack = []
-
-
     ite = 0
     check = 0
     for i in stack:
@@ -216,17 +138,19 @@ def collapse2(stack):
             new_stack.append("**")
         elif i == "exp":
             new_stack.append("math.exp")
-
-        # elif i == "(" and isinstance(stack[ite+1], float) and stack[ite+2] == ")":
-        #     new_stack.append(int(stack[ite + 1]))
-        #     check += 1
         else:
             new_stack.append(i)
         ite += 1
-
     return new_stack
 
 def add_String(stack):
+    '''
+    Function to convert a list of tokens into a single string.
+    Args:
+        stack: List of tokens.
+    Returns:
+        String representation of the tokens.
+    '''
     outStr = ""
     for i in stack:
         outStr += str(i)
@@ -236,6 +160,16 @@ def add_String(stack):
 
 
 def eval2(file, final_stack, j):
+    '''
+    Function to evaluate the final stack and return a string representation of the equation.
+    Args:
+        file: DataFrame containing the variables and their values.
+        final_stack: List of tokens representing the equation.
+        j: Index of the current row in the DataFrame.
+    Returns:
+        String representation of the evaluated equation.
+    '''
+    
     if "W" in final_stack:
         return "math.exp(2.53*math.log(" + str(float(file["DBH"].iloc[j]))  + ")-2.134)"
     ite = 0
@@ -271,43 +205,17 @@ def eval2(file, final_stack, j):
             new_stack.append(i)
         ite += 1
     final_stack = new_stack
-    # print(add_String(collapse2(final_stack)))
     return add_String(collapse2(final_stack))
-
-# calculate([199.2222, '*', 6.684507609859605, '^', 2.0, '+', 263.1915, '*', 6.684507609859605, '-', 9.913])
-
-# def add_variable(stack):
-
-
-
-# file = pd.read_csv("./ADHAPALI_allometric.csv")
-
-# equations = file["Equation"]
-
-
-# biomass = []
-
-# for i in range(len(file)):
-#     print(i)
-#     print(file['Equation'].iloc[i])
-#     eq = produce_stack(file["Equation"].iloc[i])
-#     # print(eq)
-#     string = eval2(eq, i)
-#     try:
-#         if eval(string) > 0:
-#             biomass.append(eval(string))
-#         else:
-#             biomass.append(eval("math.exp(2.53*math.log(" + str(float(file["DBH"].iloc[i]))  + ")-2.134)"))
-#     except KeyError:
-#         print("Invalid input. Please enter a valid number.")
-# file["Calc Biomass"] = biomass
-# file.to_csv("./ADHAPALI_biomass.csv", index=False)
-# print("Biomass calculation completed and saved to ADHAPALI_biomass.csv")
-
 
 
 
 def biomass_calculation(area):
+    '''
+    Function to calculate biomass based on allometric equations.
+    Args:
+        area: Name of the sampling area.
+    '''
+    
     file = pd.read_csv(f"./data/GEE_exports_{district_name}/" + area.upper() + "_allometric.csv")
     equations = file["Equation"]
     biomass = []
@@ -326,7 +234,7 @@ def biomass_calculation(area):
     file.to_csv(f"./data/GEE_exports_{district_name}/" + area.upper() + "_biomass.csv", index=False)
     print("Biomass calculation completed and saved to " + area + "_biomass.csv")
 
-import os
+
 
 if os.path.exists(f'./data/GEE_exports_{district_name}/{sample_area.upper()}_allometric.csv'):
     biomass_calculation(sample_area)

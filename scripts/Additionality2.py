@@ -10,6 +10,18 @@ import pandas as pd
 import sys
 import os
 
+
+'''
+Establishing Global Parameters
+------------------------------
+state_name: Name of the state
+district_name: Name of the district
+site_name: Name of the site
+start_year: Start year of the project
+mid_pt: End point of monitoring period
+end_year: End year of the project (Projection period)
+'''
+
 if len(sys.argv) > 1:
     state_name = sys.argv[1]
     district_name = sys.argv[2]
@@ -25,6 +37,20 @@ else:
     mid_pt = 2015
     end_year = 2020
 
+
+'''
+File Locations/Paths
+--------------------
+sampling_plot: Name of the sampling plot (same as site_name)
+pred_path: Path to the predicted deforestation raster
+mask_path: Path to the KMeans clustered raster for the sampling plot
+outpath: Path to save the masked raster
+def1_path: Path to the deforestation raster for the monitoring period
+def2_path: Path to the deforestation raster for the projection period
+aff1_path: Path to the afforestation raster for the monitoring period
+aff2_path: Path to the afforestation raster for the projection period
+'''
+
 sampling_plot = site_name
 pred_path = f'./data/GEE_exports_{district_name}/Acre_Adjucted_Density_Map_VP.tif'
 mask_path = f'./data/GEE_exports_{district_name}/' + sampling_plot + '_KMeans_clusters.tif'
@@ -34,19 +60,16 @@ def2_path = f"./data/GEE_exports_{district_name}/deforestation_map_{start_year}_
 aff1_path = f"./data/GEE_exports_{district_name}/afforestation_{start_year}_{mid_pt}.tif"
 aff2_path = f"./data/GEE_exports_{district_name}/afforestation_{start_year}_{end_year}.tif"
 
-
-
-# Open mask raster
-
-
-
+# Initialize final result dataframe
 final_result = pd.DataFrame(columns=['cluster', 'projected deforestation', 'deforestation_2010_2015', 'deforestation_2010_2020', 'afforestation_2010_2015', 'afforestation_2010_2020'])
 
-for j in range(7):
-    k = j + 1
-    result = [k%7]
 
-    for i in range(5):
+
+
+for j in range(7):  # Assuming clusters are labeled from 1 to 7
+    k = j + 1 # Cluster 0 -> 1, Cluster 1 -> 2, ..., Cluster 6 -> 0
+    result = [k%7]
+    for i in range(5): # 0: predicted deforestation, 1: def1, 2: def2, 3: aff1, 4: aff2
         if i == 0:
             src_path = pred_path
         elif i == 1:
@@ -57,7 +80,7 @@ for j in range(7):
             src_path = aff1_path
         elif i == 4:
             src_path = aff2_path
-    # Open source raster
+        # Open source raster
         with rasterio.open(src_path) as src:
             src_crs = src.crs
             src_transform = src.transform
@@ -68,8 +91,7 @@ for j in range(7):
         # Open mask raster and reproject it to source raster's CRS and shape
         with rasterio.open(mask_path) as mask_r:
             mask_data = mask_r.read(1)
-            mask_data[mask_data == 0] = 7
-            
+            mask_data[mask_data == 0] = 7 # Change 0 to 7 (0 is non-forest in our case)            
             mask_data = np.empty((mask_r.count, src_height, src_width), dtype=mask_r.dtypes[0])
             reproject(
                 source=rasterio.band(mask_r, 1),
@@ -104,6 +126,17 @@ for j in range(7):
     final_result.loc[len(final_result)] = result
 final_result.to_csv(f'./data/GEE_exports_{district_name}/' + sampling_plot + '_forest_cover_change.csv', index=False)
 
+
+'''
+Calculating Additionality
+----------------------
+Dataframe columns:
+cluster: Cluster number
+projected_deforestation: Projected deforestation area (in hectares)
+actual_deforestation: Actual deforestation area (in hectares)
+afforestation: Afforestation area (in hectares)
+additionality_area: Additionality area (in hectares)
+'''
 
 additionality_table = pd.DataFrame(columns=['cluster', 'projected_deforestation', 'actual_deforestation', 'afforestation'])
 additionality_area = []
