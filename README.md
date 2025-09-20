@@ -119,10 +119,6 @@ All data in this repository was collected using the following survey datasheet f
 | DBH              | Diameter at Breast Height of the Species   | 6.366197724                | Yes      |
 | Scientific Name  | Scientific Name of the Species Sampled     | Kendu Diospyros melanoxylon| Yes      |
 
-**Instructions:**
-1. Print the datasheet template (see `/docs/datasheet_template.pdf`).
-2. Fill out each row during field surveys.
-3. Enter data into the digital version (`/data/raw/`) before analysis.
 Run the following the command line to estimate the biomass:
 `python ./scripts/parser.py <REGION = "Pangatira">`
 
