@@ -44,7 +44,7 @@ A given sampling survey will contain the different trees recorded in the sample 
 Upload the following spreadsheet containing the sampling survey for a `region` to the 
 "./data/GEE_exports_<DISTRICT>" folder:
 * REGION + "_allometric.csv (REGION should be in uppercase)
-* 
+  
 ## Survey Datasheet Format
 
 All data in this repository was collected using the following survey datasheet format:
