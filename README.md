@@ -103,6 +103,26 @@ Upload the following spreadsheet containing the sampling survey for a `region` t
 "./data/GEE_exports_<DISTRICT>" folder:
 * REGION + "_allometric.csv (REGION should be in uppercase)
 
+## Survey Datasheet Format
+
+All data in this repository was collected using the following survey datasheet format:
+
+| Field Name       | Description                                | Example                    | Required |
+|------------------|--------------------------------------------|----------------------------|----------|
+| Habdistrict      | District Site Belongs to                   | Dhenkanal                  | Yes      |
+| Habpanchayat     | Sampling Site                              | Pangatira                  | Yes      |
+| Plot No          | Unique Identifier for the Sampling Plot    | 1, 2, 3 ...                | Yes      |
+| Plot Lat         | GPS latitude of site in decimal degrees    | 21.1618159                 | Yes      |
+| Plot Long        | GPS longitude of site in decimal degrees   | 85.3657417                 | Yes      |
+| Scientific Name  | Scientific Name of the Species Sampled     | Kendu Diospyros melanoxylon| Yes      |
+| Height           | Height of the Species Sampled              | 11                         | Yes      |
+| DBH              | Diameter at Breast Height of the Species   | 6.366197724                | Yes      |
+| Scientific Name  | Scientific Name of the Species Sampled     | Kendu Diospyros melanoxylon| Yes      |
+
+**Instructions:**
+1. Print the datasheet template (see `/docs/datasheet_template.pdf`).
+2. Fill out each row during field surveys.
+3. Enter data into the digital version (`/data/raw/`) before analysis.
 Run the following the command line to estimate the biomass:
 `python ./scripts/parser.py <REGION = "Pangatira">`
 
